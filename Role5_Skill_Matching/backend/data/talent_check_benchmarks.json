@@ -1,0 +1,38 @@
+{
+  "Google": {
+    "companies": "Google",
+    "coding": "8-AS",
+    "data_structures_and_algorithms": "8-AS",
+    "object_oriented_programming_and_design": "7-AS",
+    "aptitude_and_problem_solving": "7-AS",
+    "communication_skills": "7-AS",
+    "ai_native_engineering": "5-AP"
+  },
+  "Microsoft": {
+    "companies": "Microsoft",
+    "coding": "7-AS",
+    "data_structures_and_algorithms": "7-AS",
+    "object_oriented_programming_and_design": "7-AS",
+    "aptitude_and_problem_solving": "6-AS",
+    "communication_skills": "7-AS",
+    "ai_native_engineering": "4-CU"
+  },
+  "Oracle Financial Services Software": {
+    "companies": "Oracle Financial Services Software",
+    "coding": "6-AS",
+    "data_structures_and_algorithms": "6-AS",
+    "object_oriented_programming_and_design": "6-AP",
+    "aptitude_and_problem_solving": "6-AS",
+    "communication_skills": "6-AS",
+    "ai_native_engineering": "3-CU"
+  },
+  "Barclays PLC": {
+    "companies": "Barclays PLC",
+    "coding": "7-AS",
+    "data_structures_and_algorithms": "7-AS",
+    "object_oriented_programming_and_design": "7-AS",
+    "aptitude_and_problem_solving": "6-AS",
+    "communication_skills": "7-AS",
+    "ai_native_engineering": "4-CU"
+  }
+}
