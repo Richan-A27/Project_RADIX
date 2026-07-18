@@ -1,0 +1,10 @@
+.venv/
+__pycache__/
+.env
+*.pyc
+output/*.json
+ResumeParser/.venv/
+ResumeParser/__pycache__/
+ResumeParser/.env
+ResumeParser/**/*.pyc
+ResumeParser/output/*.json

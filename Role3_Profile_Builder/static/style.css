@@ -1,0 +1,310 @@
+/* Vibrant Modern Glassmorphism Styling */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px;
+    color: #f8fafc;
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* Dynamic background glowing orbs */
+body::before {
+    content: '';
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    background: #6366f1;
+    top: 5%;
+    left: 20%;
+    border-radius: 50%;
+    filter: blur(150px);
+    opacity: 0.4;
+    z-index: 0;
+    pointer-events: none;
+    animation: float 8s ease-in-out infinite alternate;
+}
+body::after {
+    content: '';
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    background: #ec4899;
+    bottom: 10%;
+    right: 20%;
+    border-radius: 50%;
+    filter: blur(150px);
+    opacity: 0.3;
+    z-index: 0;
+    pointer-events: none;
+    animation: float 6s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes float {
+    0% { transform: translateY(0) translateX(0); }
+    100% { transform: translateY(30px) translateX(30px); }
+}
+
+.container {
+    width: 100%;
+    max-width: 800px;
+    z-index: 1;
+}
+
+.card {
+    background: rgba(30, 41, 59, 0.4);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    padding: 50px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    position: relative;
+}
+
+/* Header */
+.header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.profile-icon {
+    font-size: 42px;
+    color: #818cf8;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, #818cf8, #c084fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.header h1 {
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: -1px;
+    color: #ffffff;
+    margin-bottom: 8px;
+}
+
+.header p {
+    color: #94a3b8;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+    font-weight: 400;
+}
+
+/* Progress Tracker */
+.progress-box {
+    margin: 30px 0;
+    background: rgba(15, 23, 42, 0.4);
+    padding: 16px 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.progress-text {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #818cf8;
+}
+
+.progress {
+    width: 100%;
+    height: 8px;
+    background: #1e293b;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    width: 35%;
+    height: 100%;
+    background: linear-gradient(90deg, #6366f1, #d946ef);
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+    transition: width 0.4s ease;
+}
+
+/* Upload Box */
+.upload-box {
+    border: 2px dashed rgba(129, 140, 248, 0.3);
+    padding: 40px 20px;
+    text-align: center;
+    border-radius: 16px;
+    background: rgba(15, 23, 42, 0.2);
+    margin-bottom: 40px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.upload-box:hover {
+    border-color: #818cf8;
+    background: rgba(129, 140, 248, 0.05);
+}
+
+.pdf-icon {
+    font-size: 36px;
+    color: #a78bfa;
+    margin-bottom: 16px;
+}
+
+.upload-box h3 {
+    font-size: 16px;
+    color: #cbd5e1;
+    font-weight: 500;
+}
+
+.upload-box input[type="file"] {
+    display: none; /* Hide default input to make it neat, assuming script triggers it */
+}
+
+/* Form Sections */
+.section-title {
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #818cf8;
+    margin: 30px 0 20px 0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(129, 140, 248, 0.2), transparent);
+}
+
+.row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #94a3b8;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 14px 16px;
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    outline: none;
+    color: #f8fafc;
+    font-size: 15px;
+    transition: all 0.2s ease;
+}
+
+.input-group input:focus {
+    border-color: #818cf8;
+    background: rgba(15, 23, 42, 0.6);
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.1);
+}
+
+.input-group input::placeholder {
+    color: #475569;
+}
+
+/* Skills Wrapper */
+.skills-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 14px;
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    min-height: 52px;
+    align-items: center;
+    transition: all 0.2s ease;
+}
+
+.skills-wrapper:focus-within {
+    border-color: #818cf8;
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.1);
+}
+
+.skill-badge {
+    background: rgba(99, 102, 241, 0.2);
+    color: #c7d2fe;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.skill-badge i {
+    cursor: pointer;
+    color: #818cf8;
+    font-size: 12px;
+}
+
+.skill-badge i:hover {
+    color: #f87171;
+}
+
+/* Submit Button */
+.submit-btn {
+    width: 100%;
+    margin-top: 40px;
+    padding: 16px;
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
+}
+
+.submit-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 15px 30px -5px rgba(99, 102, 241, 0.6);
+}
+
+@media(max-width: 768px) {
+    .row {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+    .card {
+        padding: 30px 20px;
+    }
+}
