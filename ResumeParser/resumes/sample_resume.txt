@@ -1,0 +1,16 @@
+Jane Doe
+jane.doe@example.com | (555) 123-4567 | New York, NY
+
+Summary
+Software engineering graduate with experience in Python, SQL, and AWS.
+
+Skills
+Python, SQL, Machine Learning, Docker, AWS, Communication
+
+Projects
+- Built an ML project in Python to classify customer support tickets.
+- Designed a SQL dashboard for analytics reporting.
+- Deployed a small web service on AWS using Docker.
+
+Education
+B.S. in Computer Science
