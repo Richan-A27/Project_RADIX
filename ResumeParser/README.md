@@ -1,11 +1,11 @@
 # RADIX Role 2 - Resume Parsing
 
-This project implements Role 2 of the RADIX Talent Match pipeline. It accepts a resume in PDF, DOCX, or TXT format, extracts the text, sends it to OpenAI using the Role 2 system prompt, validates the returned JSON, and saves the result to `output/parsed_resume.json`.
+This project implements Role 2 of the RADIX Talent Match pipeline. It accepts a resume in PDF, DOCX, or TXT format, extracts the text, sends it to Gemini using the Role 2 system prompt, validates the returned JSON, and saves the result to `output/parsed_resume.json`.
 
 ## Requirements
 
 - Python 3.11
-- OpenAI API key
+- Gemini API key
 
 ## Installation
 
@@ -34,16 +34,16 @@ pip install -r requirements.txt
 
 ## Environment Setup
 
-Copy `.env.example` to `.env` and set your OpenAI credentials:
+Copy `.env.example` to `.env` and set your Gemini credentials:
 
 ```bash
-OPENAI_API_KEY=your_api_key_here
-OPENAI_MODEL=gpt-4.1-mini
-OPENAI_TIMEOUT_SECONDS=60
+GEMINI_API_KEY=your_api_key_here
+GEMINI_MODEL=gemini-2.0-flash
+GEMINI_TIMEOUT_SECONDS=60
 MAX_RESUME_TEXT_CHARS=40000
 ```
 
-You can change `OPENAI_MODEL`, `OPENAI_TIMEOUT_SECONDS`, and `MAX_RESUME_TEXT_CHARS` without modifying the code.
+You can change `GEMINI_MODEL`, `GEMINI_TIMEOUT_SECONDS`, and `MAX_RESUME_TEXT_CHARS` without modifying the code.
 
 ## Running the Project
 
@@ -58,6 +58,16 @@ Enter the path to a resume file when prompted. The parsed result will be saved t
 ```bash
 output/parsed_resume.json
 ```
+
+## Streamlit UI
+
+Launch the web UI for a more visual experience:
+
+```bash
+streamlit run ui.py
+```
+
+The UI lets you upload a resume, preview extracted text, run the Role 2 parser, and download the resulting JSON.
 
 ## Output Shape
 
@@ -102,7 +112,7 @@ Example saved output:
 ## Notes
 
 - `extract_text.py` handles PDF, DOCX, and TXT input.
-- `parser.py` uses the modern OpenAI Python SDK.
+- `parser.py` uses the modern Gemini Python SDK.
 - `parser.py` includes retry handling, prompt-injection hardening, response cleanup, and schema validation.
 - `validator.py` enforces the required JSON schema before saving.
 - This implementation is designed so Role 3 can consume the parsed output directly.

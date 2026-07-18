@@ -1,4 +1,4 @@
-"""OpenAI-powered resume parser for Role 2."""
+"""Gemini-powered resume parser for Role 2."""
 
 from __future__ import annotations
 
@@ -10,15 +10,18 @@ import time
 from pathlib import Path
 from typing import Any
 
+import httpx
 from dotenv import load_dotenv
-from openai import APIConnectionError, APIError, APITimeoutError, AuthenticationError, OpenAI, RateLimitError
+from google import genai
+from google.genai import errors as google_errors
+from google.genai import types
 
 from prompts import SYSTEM_PROMPT
 from validator import ValidationError, validate_resume_json
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_MODEL = "gpt-4.1-mini"
+DEFAULT_MODEL = "gemini-2.0-flash"
 DEFAULT_TIMEOUT_SECONDS = 60.0
 DEFAULT_MAX_RESUME_TEXT_CHARS = 40000
 MAX_RETRIES = 3
@@ -27,21 +30,21 @@ MARKDOWN_FENCE_PATTERN = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.IGNORECASE
 
 
 class ResumeParsingError(RuntimeError):
-    """Raised when the OpenAI parser cannot produce valid resume JSON."""
+    """Raised when the Gemini parser cannot produce valid resume JSON."""
 
 
 def _load_runtime_config() -> tuple[str, float, int]:
     """Load environment variables and resolve runtime settings."""
     load_dotenv()
 
-    model = os.getenv("OPENAI_MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL
+    model = os.getenv("GEMINI_MODEL", DEFAULT_MODEL).strip() or DEFAULT_MODEL
 
-    timeout_raw = os.getenv("OPENAI_TIMEOUT_SECONDS", str(DEFAULT_TIMEOUT_SECONDS)).strip()
+    timeout_raw = os.getenv("GEMINI_TIMEOUT_SECONDS", str(DEFAULT_TIMEOUT_SECONDS)).strip()
     try:
         timeout_seconds = float(timeout_raw)
     except ValueError as exc:
         raise ResumeParsingError(
-            "OPENAI_TIMEOUT_SECONDS must be a valid number in your .env file."
+            "GEMINI_TIMEOUT_SECONDS must be a valid number in your .env file."
         ) from exc
 
     max_chars_raw = os.getenv(
@@ -55,19 +58,19 @@ def _load_runtime_config() -> tuple[str, float, int]:
         ) from exc
 
     if timeout_seconds <= 0:
-        raise ResumeParsingError("OPENAI_TIMEOUT_SECONDS must be greater than zero.")
+        raise ResumeParsingError("GEMINI_TIMEOUT_SECONDS must be greater than zero.")
     if max_resume_chars <= 0:
         raise ResumeParsingError("MAX_RESUME_TEXT_CHARS must be greater than zero.")
 
     return model, timeout_seconds, max_resume_chars
 
 
-def _load_client() -> OpenAI:
-    """Load environment variables and create an OpenAI client."""
-    api_key = os.getenv("OPENAI_API_KEY")
+def _load_client() -> genai.Client:
+    """Load environment variables and create a Gemini client."""
+    api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
-        raise ResumeParsingError("OPENAI_API_KEY is missing. Add it to your .env file.")
-    return OpenAI(api_key=api_key)
+        raise ResumeParsingError("GEMINI_API_KEY is missing. Add it to your .env file.")
+    return genai.Client(api_key=api_key)
 
 
 def _normalize_model_input(resume_text: str, max_chars: int) -> str:
@@ -152,45 +155,62 @@ def parse_resume(resume_text: str, filename: str) -> dict[str, Any]:
     last_error: Exception | None = None
     for attempt in range(MAX_RETRIES + 1):
         try:
-            response = client.responses.create(
+            response = client.models.generate_content(
                 model=model_name,
-                instructions=SYSTEM_PROMPT,
-                input=request_text,
-                temperature=0,
-                timeout=timeout_seconds,
-                metadata={"source_file": source_file, "pipeline_role": "Role 2"},
-                text={"format": {"type": "json_object"}},
+                contents=request_text,
+                config=types.GenerateContentConfig(
+                    system_instruction=SYSTEM_PROMPT,
+                    temperature=0.0,
+                    max_output_tokens=4096,
+                    response_mime_type="application/json",
+                    timeout=timeout_seconds,
+                ),
             )
             break
-        except (AuthenticationError,) as exc:
-            raise ResumeParsingError(f"OpenAI authentication failed: {exc}") from exc
-        except (RateLimitError, APIConnectionError) as exc:
+        except google_errors.ServerError as exc:
             last_error = exc
             if attempt >= MAX_RETRIES:
                 raise ResumeParsingError(
-                    f"OpenAI request failed after {MAX_RETRIES + 1} attempts due to a transient error: {exc}"
+                    f"Gemini request failed after {MAX_RETRIES + 1} attempts due to a transient error: {exc}"
                 ) from exc
 
             delay_seconds = BACKOFF_BASE_SECONDS * (2**attempt)
             logger.warning(
-                "Transient OpenAI error on attempt %s/%s: %s. Retrying in %.1f seconds.",
+                "Transient Gemini quota error on attempt %s/%s: %s. Retrying in %.1f seconds.",
                 attempt + 1,
                 MAX_RETRIES + 1,
                 exc,
                 delay_seconds,
             )
             time.sleep(delay_seconds)
-        except APIError as exc:
-            if getattr(exc, "status_code", None) and int(getattr(exc, "status_code")) >= 500:
+        except google_errors.ClientError as exc:
+            raise ResumeParsingError(f"Gemini request was rejected: {exc}") from exc
+        except httpx.TimeoutException as exc:
+            last_error = exc
+            if attempt >= MAX_RETRIES:
+                raise ResumeParsingError(
+                    f"Gemini request timed out after {MAX_RETRIES + 1} attempts: {exc}"
+                ) from exc
+
+            delay_seconds = BACKOFF_BASE_SECONDS * (2**attempt)
+            logger.warning(
+                "Gemini timeout on attempt %s/%s. Retrying in %.1f seconds.",
+                attempt + 1,
+                MAX_RETRIES + 1,
+                delay_seconds,
+            )
+            time.sleep(delay_seconds)
+        except Exception as exc:  # pragma: no cover - defensive wrapper
+            if "timeout" in str(exc).lower():
                 last_error = exc
                 if attempt >= MAX_RETRIES:
                     raise ResumeParsingError(
-                        f"OpenAI request failed after {MAX_RETRIES + 1} attempts due to a server error: {exc}"
+                        f"Gemini request timed out after {MAX_RETRIES + 1} attempts: {exc}"
                     ) from exc
 
                 delay_seconds = BACKOFF_BASE_SECONDS * (2**attempt)
                 logger.warning(
-                    "Transient OpenAI server error on attempt %s/%s: %s. Retrying in %.1f seconds.",
+                    "Gemini timeout on attempt %s/%s. Retrying in %.1f seconds.",
                     attempt + 1,
                     MAX_RETRIES + 1,
                     exc,
@@ -199,32 +219,24 @@ def parse_resume(resume_text: str, filename: str) -> dict[str, Any]:
                 time.sleep(delay_seconds)
                 continue
 
-            raise ResumeParsingError(f"OpenAI request failed: {exc}") from exc
-        except APITimeoutError as exc:
-            last_error = exc
-            if attempt >= MAX_RETRIES:
-                raise ResumeParsingError(
-                    f"OpenAI request timed out after {MAX_RETRIES + 1} attempts: {exc}"
-                ) from exc
-
-            delay_seconds = BACKOFF_BASE_SECONDS * (2**attempt)
-            logger.warning(
-                "OpenAI timeout on attempt %s/%s. Retrying in %.1f seconds.",
-                attempt + 1,
-                MAX_RETRIES + 1,
-                delay_seconds,
-            )
-            time.sleep(delay_seconds)
-        except Exception as exc:  # pragma: no cover - defensive wrapper
-            raise ResumeParsingError(f"Unexpected OpenAI error: {exc}") from exc
+            raise ResumeParsingError(f"Gemini request failed: {exc}") from exc
     else:
         if last_error is not None:
-            raise ResumeParsingError(f"OpenAI request failed: {last_error}") from last_error
-        raise ResumeParsingError("OpenAI request failed for an unknown reason.")
+            raise ResumeParsingError(f"Gemini request failed: {last_error}") from last_error
+        raise ResumeParsingError("Gemini request failed for an unknown reason.")
 
-    response_text = getattr(response, "output_text", None)
+    response_text = getattr(response, "text", None)
     if not response_text:
-        raise ResumeParsingError("The LLM returned no usable text.")
+        response_parts = getattr(response, "candidates", None)
+        if response_parts:
+            response_text = "".join(
+                part.text or ""
+                for candidate in response_parts
+                for part in getattr(candidate.content, "parts", [])
+            )
+
+    if not response_text:
+        raise ResumeParsingError("Gemini returned no usable text.")
 
     parsed = _extract_json_payload(response_text)
 
