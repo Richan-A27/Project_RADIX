@@ -1,332 +1,310 @@
-/* Premium Glassmorphism & Neural Mesh Dark Mode Styling */
+/* Vibrant Modern Glassmorphism Styling */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 body {
-    background: radial-gradient(circle at center, #262320 0%, #131211 100%);
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
     min-height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
     padding: 40px;
-    color: #e5e5e0;
+    color: #f8fafc;
     overflow-x: hidden;
     position: relative;
 }
 
-/* Subtle background glowing elements simulating a brain aura */
+/* Dynamic background glowing orbs */
 body::before {
     content: '';
     position: absolute;
-    width: 600px;
-    height: 600px;
-    background: radial-gradient(circle, rgba(212, 163, 115, 0.08) 0%, transparent 70%);
-    top: 10%;
-    left: 50%;
-    transform: translateX(-50%);
+    width: 400px;
+    height: 400px;
+    background: #6366f1;
+    top: 5%;
+    left: 20%;
+    border-radius: 50%;
+    filter: blur(150px);
+    opacity: 0.4;
     z-index: 0;
     pointer-events: none;
+    animation: float 8s ease-in-out infinite alternate;
+}
+body::after {
+    content: '';
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    background: #ec4899;
+    bottom: 10%;
+    right: 20%;
+    border-radius: 50%;
+    filter: blur(150px);
+    opacity: 0.3;
+    z-index: 0;
+    pointer-events: none;
+    animation: float 6s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes float {
+    0% { transform: translateY(0) translateX(0); }
+    100% { transform: translateY(30px) translateX(30px); }
 }
 
 .container {
     width: 100%;
-    max-width: 950px;
+    max-width: 800px;
     z-index: 1;
 }
 
 .card {
-    background: rgba(36, 34, 32, 0.65);
-    backdrop-filter: blur(25px);
-    -webkit-backdrop-filter: blur(25px);
-    border: 1px solid rgba(212, 163, 115, 0.15);
-    border-radius: 28px;
-    padding: 45px;
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4), 
-                inset 0 1px 2px rgba(255, 255, 255, 0.05);
-    animation: premiumReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    background: rgba(30, 41, 59, 0.4);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    padding: 50px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     position: relative;
 }
 
-@keyframes premiumReveal {
-    from {
-        opacity: 0;
-        transform: translateY(30px) scale(0.98);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-
-/* Header UI Elements */
+/* Header */
 .header {
     text-align: center;
-    margin-bottom: 35px;
+    margin-bottom: 40px;
 }
 
 .profile-icon {
-    font-size: 48px;
-    color: #d4a373;
-    margin-bottom: 15px;
-    filter: drop-shadow(0 0 12px rgba(212, 163, 115, 0.4));
+    font-size: 42px;
+    color: #818cf8;
+    margin-bottom: 16px;
+    background: linear-gradient(135deg, #818cf8, #c084fc);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .header h1 {
-    font-size: 32px;
+    font-size: 36px;
     font-weight: 700;
-    letter-spacing: -0.5px;
-    color: #f5f5f0;
-    margin-bottom: 6px;
+    letter-spacing: -1px;
+    color: #ffffff;
+    margin-bottom: 8px;
 }
 
 .header p {
-    color: #a39f99;
-    font-size: 14px;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    font-weight: 500;
+    color: #94a3b8;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+    font-weight: 400;
 }
 
-/* High-Class Stepper Tracker */
+/* Progress Tracker */
 .progress-box {
     margin: 30px 0;
-    background: rgba(20, 19, 18, 0.4);
-    padding: 20px;
-    border-radius: 16px;
-    border: 1px solid rgba(212, 163, 115, 0.08);
+    background: rgba(15, 23, 42, 0.4);
+    padding: 16px 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .progress-text {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 12px;
-    font-size: 14px;
+    margin-bottom: 10px;
+    font-size: 13px;
     font-weight: 600;
-    color: #d4a373;
+    color: #818cf8;
 }
 
 .progress {
     width: 100%;
-    height: 6px;
-    background: #1f1d1c;
-    border-radius: 10px;
+    height: 8px;
+    background: #1e293b;
+    border-radius: 4px;
     overflow: hidden;
-    position: relative;
 }
 
 .progress-bar {
-    width: 35%; /* Simulating live progress map fill */
+    width: 35%;
     height: 100%;
-    background: linear-gradient(90deg, #b5895a, #e6b88a);
-    box-shadow: 0 0 10px rgba(212, 163, 115, 0.6);
-    border-radius: 10px;
-    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    background: linear-gradient(90deg, #6366f1, #d946ef);
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+    transition: width 0.4s ease;
 }
 
-/* Neural Drag & Drop Upload Space */
+/* Upload Box */
 .upload-box {
-    border: 2px dashed rgba(212, 163, 115, 0.25);
-    padding: 35px 25px;
+    border: 2px dashed rgba(129, 140, 248, 0.3);
+    padding: 40px 20px;
     text-align: center;
-    border-radius: 20px;
-    background: rgba(20, 19, 18, 0.3);
-    margin-bottom: 35px;
+    border-radius: 16px;
+    background: rgba(15, 23, 42, 0.2);
+    margin-bottom: 40px;
     transition: all 0.3s ease;
     cursor: pointer;
-    position: relative;
 }
 
 .upload-box:hover {
-    border-color: #d4a373;
-    background: rgba(212, 163, 115, 0.04);
-    box-shadow: 0 0 20px rgba(212, 163, 115, 0.05);
+    border-color: #818cf8;
+    background: rgba(129, 140, 248, 0.05);
 }
 
 .pdf-icon {
-    font-size: 40px;
-    color: #e07a5f;
-    margin-bottom: 12px;
-    filter: drop-shadow(0 4px 10px rgba(224, 122, 95, 0.3));
+    font-size: 36px;
+    color: #a78bfa;
+    margin-bottom: 16px;
 }
 
 .upload-box h3 {
     font-size: 16px;
-    color: #e5e5e0;
-    margin-bottom: 15px;
+    color: #cbd5e1;
     font-weight: 500;
 }
 
 .upload-box input[type="file"] {
-    color: #a39f99;
-    font-size: 13px;
+    display: none; /* Hide default input to make it neat, assuming script triggers it */
 }
 
-/* Neural Spark Fill Button */
-.auto-btn {
-    background: linear-gradient(135deg, #d4a373 0%, #b5895a 100%);
-    color: #131211;
-    border: none;
-    padding: 11px 24px;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    margin-top: 15px;
-    box-shadow: 0 4px 15px rgba(212, 163, 115, 0.3);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.auto-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(212, 163, 115, 0.5);
-    filter: brightness(1.1);
-}
-
-/* Section Separators */
+/* Form Sections */
 .section-title {
-    font-size: 15px;
-    font-weight: 700;
+    font-size: 14px;
+    font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: #d4a373;
-    margin: 35px 0 20px 0;
+    letter-spacing: 1.2px;
+    color: #818cf8;
+    margin: 30px 0 20px 0;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 15px;
 }
 
 .section-title::after {
     content: '';
     flex: 1;
     height: 1px;
-    background: linear-gradient(90deg, rgba(212, 163, 115, 0.2), transparent);
+    background: linear-gradient(90deg, rgba(129, 140, 248, 0.2), transparent);
 }
 
-/* Grid Framework & Inputs */
 .row {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 25px;
+    gap: 20px;
 }
 
 .input-group {
-    margin-bottom: 25px;
-    position: relative;
+    margin-bottom: 20px;
 }
 
 .input-group label {
     display: block;
-    margin-bottom: 9px;
+    margin-bottom: 8px;
     font-size: 13px;
-    font-weight: 600;
-    color: #a39f99;
-    letter-spacing: 0.3px;
+    font-weight: 500;
+    color: #94a3b8;
 }
 
 .input-group input {
     width: 100%;
     padding: 14px 16px;
-    background: rgba(19, 18, 17, 0.6);
-    border: 1px solid rgba(212, 163, 115, 0.12);
-    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
     outline: none;
-    color: #f5f5f0;
+    color: #f8fafc;
     font-size: 15px;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
 }
 
 .input-group input:focus {
-    border-color: #d4a373;
-    background: rgba(19, 18, 17, 0.9);
-    box-shadow: 0 0 12px rgba(212, 163, 115, 0.15),
-                inset 0 1px 1px rgba(0,0,0,0.2);
+    border-color: #818cf8;
+    background: rgba(15, 23, 42, 0.6);
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.1);
 }
 
 .input-group input::placeholder {
-    color: #5c5854;
+    color: #475569;
 }
 
-/* Dynamic Interactive Skill Badges */
+/* Skills Wrapper */
 .skills-wrapper {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    padding: 12px;
-    background: rgba(19, 18, 17, 0.6);
-    border: 1px solid rgba(212, 163, 115, 0.12);
-    border-radius: 12px;
+    padding: 10px 14px;
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
     min-height: 52px;
     align-items: center;
+    transition: all 0.2s ease;
+}
+
+.skills-wrapper:focus-within {
+    border-color: #818cf8;
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.1);
 }
 
 .skill-badge {
-    background: rgba(212, 163, 115, 0.12);
-    color: #e6b88a;
-    border: 1px solid rgba(212, 163, 115, 0.25);
-    padding: 4px 12px;
-    border-radius: 8px;
+    background: rgba(99, 102, 241, 0.2);
+    color: #c7d2fe;
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    padding: 6px 12px;
+    border-radius: 6px;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 500;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
 }
 
 .skill-badge i {
     cursor: pointer;
-    color: #a39f99;
-    font-size: 11px;
-    transition: color 0.2s;
+    color: #818cf8;
+    font-size: 12px;
 }
 
 .skill-badge i:hover {
-    color: #ef4444;
+    color: #f87171;
 }
 
-/* Synchronize Action Execution Button */
+/* Submit Button */
 .submit-btn {
     width: 100%;
-    margin-top: 30px;
+    margin-top: 40px;
     padding: 16px;
-    background: rgba(19, 18, 17, 0.8);
-    color: #d4a373;
-    border: 1px solid rgba(212, 163, 115, 0.4);
-    border-radius: 14px;
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
     cursor: pointer;
     font-size: 16px;
-    font-weight: 700;
-    letter-spacing: 1px;
-    text-transform: uppercase;
+    font-weight: 600;
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 12px;
-    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    gap: 10px;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.4);
 }
 
 .submit-btn:hover {
-    background: linear-gradient(135deg, #d4a373 0%, #b5895a 100%);
-    color: #131211;
-    border-color: transparent;
-    transform: translateY(-3px);
-    box-shadow: 0 15px 30px rgba(212, 163, 115, 0.2);
+    transform: translateY(-2px);
+    box-shadow: 0 15px 30px -5px rgba(99, 102, 241, 0.6);
 }
 
-/* Responsiveness Layer */
 @media(max-width: 768px) {
     .row {
         grid-template-columns: 1fr;
         gap: 0;
     }
     .card {
-        padding: 25px 20px;
-    }
-    body {
-        padding: 15px;
+        padding: 30px 20px;
     }
 }
