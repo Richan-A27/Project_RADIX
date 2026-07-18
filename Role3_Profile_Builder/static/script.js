@@ -8,6 +8,21 @@ document.addEventListener("DOMContentLoaded", () => {
     hiddenSkillsInput.name = "final_skills";
     skillsWrapper.appendChild(hiddenSkillsInput);
 
+    // Make the upload box clickable to trigger the hidden file input
+    const uploadBox = document.querySelector(".upload-box");
+    const fileInput = document.getElementById("resume");
+    if (uploadBox && fileInput) {
+        uploadBox.addEventListener("click", () => {
+            fileInput.click();
+        });
+        
+        fileInput.addEventListener("change", (e) => {
+            if (e.target.files.length > 0) {
+                uploadBox.querySelector("h3").textContent = `Selected: ${e.target.files[0].name}`;
+            }
+        });
+    }
+
     // Sync current tags to the hidden input
     function updateHiddenSkills() {
         const badges = skillsWrapper.querySelectorAll(".skill-badge");
