@@ -45,3 +45,22 @@ CREATE POLICY "Allow all access" ON resume_analyses
 
 -- Index for faster queries
 CREATE INDEX IF NOT EXISTS idx_resume_analyses_created_at ON resume_analyses (created_at DESC);
+
+-- Candidate Profiles table — stores profile builder form submissions
+CREATE TABLE IF NOT EXISTS candidate_profiles (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL,
+  education TEXT,
+  preferred_role TEXT,
+  skills TEXT,
+  hackathon TEXT,
+  internship TEXT,
+  certification TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE candidate_profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow all access" ON candidate_profiles
+  FOR ALL USING (true) WITH CHECK (true);

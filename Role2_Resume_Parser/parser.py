@@ -21,7 +21,7 @@ from validator import ValidationError, validate_resume_json
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_MODEL = "gemini-2.0-flash"
+DEFAULT_MODEL = "gemini-flash-latest"
 DEFAULT_TIMEOUT_SECONDS = 60.0
 DEFAULT_MAX_RESUME_TEXT_CHARS = 40000
 MAX_RETRIES = 3
