@@ -101,7 +101,23 @@ export const StateEngineProvider: React.FC<{ children: React.ReactNode }> = ({ c
   
   const [jdData, setJdData] = useState<ExtractedArtifact | null>(null);
   const [resumeData, setResumeData] = useState<ExtractedArtifact | null>(null);
-  const [profileData, setProfileData] = useState<UnifiedCandidateProfile | null>(null);
+  const [profileData, setProfileData] = useState<UnifiedCandidateProfile | null>({
+    name: 'Alex Mercer',
+    email: 'alex.mercer@radix.io',
+    education: 'B.S. in Computer Science - Tech University',
+    skills: [
+      { skill_name: 'Python Programming', category_code: 'COD', evidence: 'Extracted from default template.', confidence: 'high' },
+      { skill_name: 'React.js', category_code: 'COD', evidence: 'Extracted from default template.', confidence: 'medium' },
+      { skill_name: 'Data Structures & Algorithms', category_code: 'DSA', evidence: 'Extracted from default template.', confidence: 'high' },
+      { skill_name: 'System Design Principles', category_code: 'SYSD', evidence: 'Extracted from default template.', confidence: 'medium' },
+      { skill_name: 'AWS Cloud Services', category_code: 'CLOUD', evidence: 'Extracted from default template.', confidence: 'high' }
+    ],
+    hackathons: ['RADIX Hackathon 2026'],
+    internships: ['Software Engineer Intern at Google'],
+    certifications: ['AWS Certified Cloud Practitioner'],
+    preferred_roles: ['Fullstack Developer'],
+    cv_file: 'alex_cv_template.pdf'
+  });
   const [talentCheckReport, setTalentCheckReport] = useState<TalentCheckReport | null>(null);
   const [semanticMatchReport, setSemanticMatchReport] = useState<SemanticMatchReport | null>(null);
   

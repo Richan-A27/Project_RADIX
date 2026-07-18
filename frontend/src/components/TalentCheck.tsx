@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useRadixState } from '../state/StateEngine';
+import { SkillGalaxy } from './SkillGalaxy';
 
 export const TalentCheck: React.FC = () => {
   const {
@@ -7,7 +8,8 @@ export const TalentCheck: React.FC = () => {
     talentCheckReport,
     executeTalentCheck,
     loadingStates,
-    setCurrentView
+    setCurrentView,
+    updateProfile
   } = useRadixState();
 
   const [selectedCompany, setSelectedCompany] = useState<string>('Google');
@@ -35,6 +37,45 @@ export const TalentCheck: React.FC = () => {
 
   const handleExecute = async () => {
     await executeTalentCheck(selectedCompany);
+  };
+
+  const handleNodeClick = (catCode: any) => {
+    if (!profileData) return;
+
+    let newSkills = [...profileData.skills];
+    const catSkills = newSkills.filter(s => s.category_code === catCode);
+    
+    let currentLevel = 0;
+    if (catSkills.length > 0) {
+      currentLevel = 3;
+      catSkills.forEach(s => {
+        if (s.confidence === 'high') currentLevel += 2;
+        else if (s.confidence === 'medium') currentLevel += 1;
+      });
+      currentLevel = Math.min(10, currentLevel);
+    }
+
+    if (currentLevel >= 10) {
+      newSkills = newSkills.filter(s => s.category_code !== catCode);
+    } else {
+      newSkills.push({
+        skill_name: `Interactively Boosted ${catSkills.length + 1}`,
+        category_code: catCode,
+        evidence: 'Manually tuned during RADIX Match simulation.',
+        confidence: 'high'
+      });
+    }
+
+    const updatedProfile = {
+      ...profileData,
+      skills: newSkills
+    };
+    updateProfile(updatedProfile);
+
+    // Trigger local re-eval
+    if (talentCheckReport) {
+      executeTalentCheck(selectedCompany);
+    }
   };
 
   return (
@@ -76,86 +117,88 @@ export const TalentCheck: React.FC = () => {
         </div>
 
         {/* Right Side: Visual Comparator Reports */}
-        <div className="talent-results-card">
+        <div className="talent-results-card" style={{ gap: '24px' }}>
           {loadingStates.talentCheck ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '400px', gap: '16px' }}>
               <div className="spinner"></div>
               <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Computing skill deviations against {selectedCompany} threshold...</p>
             </div>
-          ) : talentCheckReport ? (
-            <>
-              {/* Score header */}
-              <div className="score-banner">
-                <div className="readiness-score-container">
-                  <div
-                    className="readiness-radial"
-                    style={{ '--score': talentCheckReport.readiness_score } as React.CSSProperties}
-                  >
-                    <span className="readiness-radial-text">{talentCheckReport.readiness_score}%</span>
-                  </div>
-                  <div>
-                    <div className="readiness-label">{selectedCompany} Readiness Level</div>
-                    <div className="readiness-sublabel">Candidate: {profileData.name}</div>
-                  </div>
-                </div>
-
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Target Matrix</div>
-                  <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--accent-hover)' }}>{talentCheckReport.company} Benchmark</div>
-                </div>
-              </div>
-
-              {/* Benchmark Table */}
-              <div style={{ overflowX: 'auto' }}>
-                <table className="comparison-table">
-                  <thead>
-                    <tr>
-                      <th>Category Code</th>
-                      <th>Benchmarked Target</th>
-                      <th>Candidate Skill Score</th>
-                      <th style={{ width: '40%' }}>Competency Variance</th>
-                      <th>Gap?</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {talentCheckReport.skillset_gap.map((gapItem, index) => (
-                      <tr key={index}>
-                        <td style={{ fontWeight: 600 }}>
-                          <span className={`skill-category cat-${gapItem.category_code}`} style={{ fontSize: '10px' }}>
-                            {gapItem.category_code}
-                          </span>
-                        </td>
-                        <td>{gapItem.required_level} / 10</td>
-                        <td>{gapItem.candidate_level} / 10</td>
-                        <td>
-                          <div
-                            className="level-bar-container"
-                            style={{
-                              '--req-level': gapItem.required_level,
-                              '--cand-level': gapItem.candidate_level
-                            } as React.CSSProperties}
-                          >
-                            <div className="level-bar-required"></div>
-                            <div className="level-bar-candidate"></div>
-                          </div>
-                        </td>
-                        <td>
-                          <span className={`gap-indicator ${gapItem.gap ? 'yes' : 'no'}`}>
-                            {gapItem.gap ? 'GAP DETECTED' : 'EVALUATED OK'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)', textAlign: 'center', padding: '40px' }}>
-              <div style={{ fontSize: '40px', marginBottom: '12px' }}>📊</div>
-              <h4 style={{ color: 'var(--text-secondary)' }}>Ready to Benchmarking</h4>
-              <p style={{ fontSize: '12px', marginTop: '6px', maxWidth: '300px' }}>Select a target company on the left and click Execute to run the comparative gap engine.</p>
-            </div>
+            <>
+              {/* Centerpiece Skill Node Visualizer */}
+              <SkillGalaxy profile={profileData} report={talentCheckReport} onNodeClick={handleNodeClick} />
+
+              {/* Detail Table breakdowns */}
+              {talentCheckReport && (
+                <>
+                  {/* Score header */}
+                  <div className="score-banner" style={{ marginTop: '12px' }}>
+                    <div className="readiness-score-container">
+                      <div
+                        className="readiness-radial"
+                        style={{ '--score': talentCheckReport.readiness_score } as React.CSSProperties}
+                      >
+                        <span className="readiness-radial-text">{talentCheckReport.readiness_score}%</span>
+                      </div>
+                      <div>
+                        <div className="readiness-label">{selectedCompany} Readiness Level</div>
+                        <div className="readiness-sublabel">Candidate: {profileData.name}</div>
+                      </div>
+                    </div>
+
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Target Matrix</div>
+                      <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--accent-hover)' }}>{talentCheckReport.company} Benchmark</div>
+                    </div>
+                  </div>
+
+                  {/* Benchmark Table */}
+                  <div style={{ overflowX: 'auto' }}>
+                    <table className="comparison-table">
+                      <thead>
+                        <tr>
+                          <th>Category Code</th>
+                          <th>Benchmarked Target</th>
+                          <th>Candidate Skill Score</th>
+                          <th style={{ width: '40%' }}>Competency Variance</th>
+                          <th>Gap?</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {talentCheckReport.skillset_gap.map((gapItem, index) => (
+                          <tr key={index}>
+                            <td style={{ fontWeight: 600 }}>
+                              <span className={`skill-category cat-${gapItem.category_code}`} style={{ fontSize: '10px' }}>
+                                {gapItem.category_code}
+                              </span>
+                            </td>
+                            <td>{gapItem.required_level} / 10</td>
+                            <td>{gapItem.candidate_level} / 10</td>
+                            <td>
+                              <div
+                                className="level-bar-container"
+                                style={{
+                                  '--req-level': gapItem.required_level,
+                                  '--cand-level': gapItem.candidate_level
+                                } as React.CSSProperties}
+                              >
+                                <div className="level-bar-required"></div>
+                                <div className="level-bar-candidate"></div>
+                              </div>
+                            </td>
+                            <td>
+                              <span className={`gap-indicator ${gapItem.gap ? 'yes' : 'no'}`}>
+                                {gapItem.gap ? 'GAP DETECTED' : 'EVALUATED OK'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </>
           )}
         </div>
 
