@@ -59,6 +59,16 @@ Enter the path to a resume file when prompted. The parsed result will be saved t
 output/parsed_resume.json
 ```
 
+## Streamlit UI
+
+Launch the web UI for a more visual experience:
+
+```bash
+streamlit run ui.py
+```
+
+The UI lets you upload a resume, preview extracted text, run the Role 2 parser, and download the resulting JSON.
+
 ## Output Shape
 
 The parser expects JSON in the following structure:
