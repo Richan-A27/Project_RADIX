@@ -186,74 +186,84 @@ app.post('/api/parse-jd', upload.single('file'), async (req, res) => {
     const key = process.env.GEMINI_API_KEY || req.headers['x-gemini-key'];
     
     if (key) {
-      logTracker.push({ message: `Gemini key found. Dispatching parsing agent via [${ACTIVE_GEMINI_MODEL}]...` });
-      const ai = new GoogleGenerativeAI(key);
-      const model = ai.getGenerativeModel({ model: ACTIVE_GEMINI_MODEL });
-      
-      const prompt = `
-        Analyze this Job Description. Extract skills and map each onto the 12 RADIX categories:
-        [COD, DSA, OOD, APTI, COMM, AI, CLOUD, SQL, SWE, SYSD, NETW, OS] or [OTHER].
+      try {
+        logTracker.push({ message: `Gemini key found. Dispatching parsing agent via [${ACTIVE_GEMINI_MODEL}]...` });
+        const ai = new GoogleGenerativeAI(key);
+        const model = ai.getGenerativeModel({ model: ACTIVE_GEMINI_MODEL });
         
-        Job Description:
-        ${text}
-        
-        Return JSON schema matches:
-        {
-          "company": "Company Name (string)",
-          "role": "Role Title (string)",
-          "skills": [
-            {
-              "skill_name": "Skill",
-              "category_code": "DSA|COD|...",
-              "evidence": "justifying text quote",
-              "confidence": "high|medium|low"
-            }
-          ]
-        }
-      `;
-
-      const response = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { 
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: "object",
-            properties: {
-              company: { type: "string" },
-              role: { type: "string" },
-              skills: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    skill_name: { type: "string" },
-                    category_code: { type: "string" },
-                    evidence: { type: "string" },
-                    confidence: { type: "string" }
-                  },
-                  required: ["skill_name", "category_code", "evidence", "confidence"]
-                }
+        const prompt = `
+          Analyze this Job Description. Extract skills and map each onto the 12 RADIX categories:
+          [COD, DSA, OOD, APTI, COMM, AI, CLOUD, SQL, SWE, SYSD, NETW, OS] or [OTHER].
+          
+          Job Description:
+          ${text}
+          
+          Return JSON schema matches:
+          {
+            "company": "Company Name (string)",
+            "role": "Role Title (string)",
+            "skills": [
+              {
+                "skill_name": "Skill",
+                "category_code": "DSA|COD|...",
+                "evidence": "justifying text quote",
+                "confidence": "high|medium|low"
               }
-            },
-            required: ["company", "role", "skills"]
+            ]
           }
-        }
-      });
+        `;
 
-      const responseText = response.response.text();
-      logTracker.push({ message: 'JSON response received from Gemini.' });
+        const response = await model.generateContent({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { 
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: "object",
+              properties: {
+                company: { type: "string" },
+                role: { type: "string" },
+                skills: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      skill_name: { type: "string" },
+                      category_code: { type: "string" },
+                      evidence: { type: "string" },
+                      confidence: { type: "string" }
+                    },
+                    required: ["skill_name", "category_code", "evidence", "confidence"]
+                  }
+                }
+              },
+              required: ["company", "role", "skills"]
+            }
+          }
+        });
 
-      const parsed = safeJsonParse(responseText);
-      return res.json({
-        data: {
-          source_type: 'jd',
-          source_file: fileName,
-          company: parsed.company || 'Unknown Company',
-          role: parsed.role || 'Software Engineer',
-          skills: parsed.skills || []
-        },
-        logs: createAgentLogs('JD_ANALYTICS', logTracker)
-      });
+        const responseText = response.response.text();
+        logTracker.push({ message: 'JSON response received from Gemini.' });
+
+        const parsed = safeJsonParse(responseText);
+        return res.json({
+          data: {
+            source_type: 'jd',
+            source_file: fileName,
+            company: parsed.company || 'Unknown Company',
+            role: parsed.role || 'Software Engineer',
+            skills: parsed.skills || []
+          },
+          logs: createAgentLogs('JD_ANALYTICS', logTracker)
+        });
+      } catch (apiErr) {
+        logTracker.push({ level: 'WARNING', message: `Gemini API call failed (${apiErr.message}). Gracefully falling back to parser heuristics...` });
+        const data = runSimulatedJdParser(text, fileName);
+        await new Promise(r => setTimeout(r, 1200));
+        return res.json({
+          data,
+          logs: createAgentLogs('JD_ANALYTICS', logTracker)
+        });
+      }
     } else {
       logTracker.push({ level: 'WARNING', message: 'No API key configured. Executing parser heuristics fallback...' });
       const data = runSimulatedJdParser(text, fileName);
@@ -297,80 +307,90 @@ app.post('/api/parse-resume', upload.single('file'), async (req, res) => {
     const key = process.env.GEMINI_API_KEY || req.headers['x-gemini-key'];
     
     if (key) {
-      logTracker.push({ message: `Gemini key found. Launching CV parser agent via [${ACTIVE_GEMINI_MODEL}]...` });
-      const ai = new GoogleGenerativeAI(key);
-      const model = ai.getGenerativeModel({ model: ACTIVE_GEMINI_MODEL });
-      
-      const prompt = `
-        Analyze this Resume. Extract metadata and skills categorized into the 12 RADIX classes.
+      try {
+        logTracker.push({ message: `Gemini key found. Launching CV parser agent via [${ACTIVE_GEMINI_MODEL}]...` });
+        const ai = new GoogleGenerativeAI(key);
+        const model = ai.getGenerativeModel({ model: ACTIVE_GEMINI_MODEL });
         
-        Resume text:
-        ${text}
-        
-        Return JSON schema matches:
-        {
-          "name": "Full Name",
-          "email": "Email Address",
-          "education": "Degree credentials",
-          "skills": [
-            {
-              "skill_name": "Skill",
-              "category_code": "COD|DSA|...",
-              "evidence": "source text quote",
-              "confidence": "high|medium|low"
-            }
-          ],
-          "hackathons": ["hackathon names"],
-          "internships": ["intern roles"],
-          "certifications": ["certs"],
-          "preferred_roles": ["roles"]
-        }
-      `;
-
-      const response = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { 
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: "object",
-            properties: {
-              name: { type: "string" },
-              email: { type: "string" },
-              education: { type: "string" },
-              skills: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    skill_name: { type: "string" },
-                    category_code: { type: "string" },
-                    evidence: { type: "string" },
-                    confidence: { type: "string" }
-                  },
-                  required: ["skill_name", "category_code", "evidence", "confidence"]
-                }
-              },
-              hackathons: { type: "array", items: { type: "string" } },
-              internships: { type: "array", items: { type: "string" } },
-              certifications: { type: "array", items: { type: "string" } },
-              preferred_roles: { type: "array", items: { type: "string" } }
-            },
-            required: ["name", "email", "education", "skills", "hackathons", "internships", "certifications", "preferred_roles"]
+        const prompt = `
+          Analyze this Resume. Extract metadata and skills categorized into the 12 RADIX classes.
+          
+          Resume text:
+          ${text}
+          
+          Return JSON schema matches:
+          {
+            "name": "Full Name",
+            "email": "Email Address",
+            "education": "Degree credentials",
+            "skills": [
+              {
+                "skill_name": "Skill",
+                "category_code": "COD|DSA|...",
+                "evidence": "source text quote",
+                "confidence": "high|medium|low"
+              }
+            ],
+            "hackathons": ["hackathon names"],
+            "internships": ["intern roles"],
+            "certifications": ["certs"],
+            "preferred_roles": ["roles"]
           }
-        }
-      });
+        `;
 
-      const responseText = response.response.text();
-      logTracker.push({ message: 'JSON response received from Gemini.' });
+        const response = await model.generateContent({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { 
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: "object",
+              properties: {
+                name: { type: "string" },
+                email: { type: "string" },
+                education: { type: "string" },
+                skills: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      skill_name: { type: "string" },
+                      category_code: { type: "string" },
+                      evidence: { type: "string" },
+                      confidence: { type: "string" }
+                    },
+                    required: ["skill_name", "category_code", "evidence", "confidence"]
+                  }
+                },
+                hackathons: { type: "array", items: { type: "string" } },
+                internships: { type: "array", items: { type: "string" } },
+                certifications: { type: "array", items: { type: "string" } },
+                preferred_roles: { type: "array", items: { type: "string" } }
+              },
+              required: ["name", "email", "education", "skills", "hackathons", "internships", "certifications", "preferred_roles"]
+            }
+          }
+        });
 
-      const parsed = safeJsonParse(responseText);
-      return res.json({
-        data: {
-          ...parsed,
-          cv_file: fileName
-        },
-        logs: createAgentLogs('RESUME_PARSING', logTracker)
-      });
+        const responseText = response.response.text();
+        logTracker.push({ message: 'JSON response received from Gemini.' });
+
+        const parsed = safeJsonParse(responseText);
+        return res.json({
+          data: {
+            ...parsed,
+            cv_file: fileName
+          },
+          logs: createAgentLogs('RESUME_PARSING', logTracker)
+        });
+      } catch (apiErr) {
+        logTracker.push({ level: 'WARNING', message: `Gemini API call failed (${apiErr.message}). Gracefully falling back to parser heuristics...` });
+        const data = runSimulatedResumeParser(text, fileName);
+        await new Promise(r => setTimeout(r, 1200));
+        return res.json({
+          data,
+          logs: createAgentLogs('RESUME_PARSING', logTracker)
+        });
+      }
     } else {
       logTracker.push({ level: 'WARNING', message: 'No API key configured. Executing parser heuristics fallback...' });
       const data = runSimulatedResumeParser(text, fileName);
@@ -404,59 +424,97 @@ app.post('/api/semantic-match', async (req, res) => {
     const key = process.env.GEMINI_API_KEY || req.headers['x-goog-api-key'];
 
     if (key) {
-      logTracker.push({ message: `Gemini key found. Launching alignment agent via [${ACTIVE_GEMINI_MODEL}]...` });
-      const ai = new GoogleGenerativeAI(key);
-      const model = ai.getGenerativeModel({ model: ACTIVE_GEMINI_MODEL });
+      try {
+        logTracker.push({ message: `Gemini key found. Launching alignment agent via [${ACTIVE_GEMINI_MODEL}]...` });
+        const ai = new GoogleGenerativeAI(key);
+        const model = ai.getGenerativeModel({ model: ACTIVE_GEMINI_MODEL });
 
-      const prompt = `
-        Compare the Required Job Skills against the Candidate Profile.
-        Match capabilities conceptually (e.g. synonym matching: "Python scripting" aligns with "Python development").
+        const prompt = `
+          Compare the Required Job Skills against the Candidate Profile.
+          Match capabilities conceptually (e.g. synonym matching: "Python scripting" aligns with "Python development").
 
-        Required Job Skills:
-        ${JSON.stringify(jd.skills, null, 2)}
+          Required Job Skills:
+          ${JSON.stringify(jd.skills, null, 2)}
 
-        Candidate Profile:
-        ${JSON.stringify({ name: profile.name, skills: profile.skills, education: profile.education, certifications: profile.certifications }, null, 2)}
+          Candidate Profile:
+          ${JSON.stringify({ name: profile.name, skills: profile.skills, education: profile.education, certifications: profile.certifications }, null, 2)}
 
-        Compute a final match score (0-100), list matched strengths, and list missing gaps.
-        
-        Return JSON schema matches:
-        {
-          "match_score": 85,
-          "matched_skills": ["Matched capability (synonym justification in parentheses)"],
-          "missing_skills": ["Missing requirement (category in parentheses)"]
-        }
-      `;
-
-      const response = await model.generateContent({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { 
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: "object",
-            properties: {
-              match_score: { type: "integer" },
-              matched_skills: { type: "array", items: { type: "string" } },
-              missing_skills: { type: "array", items: { type: "string" } }
-            },
-            required: ["match_score", "matched_skills", "missing_skills"]
+          Compute a final match score (0-100), list matched strengths, and list missing gaps.
+          
+          Return JSON schema matches:
+          {
+            "match_score": 85,
+            "matched_skills": ["Matched capability (synonym justification in parentheses)"],
+            "missing_skills": ["Missing requirement (category in parentheses)"]
           }
-        }
-      });
+        `;
 
-      const responseText = response.response.text();
-      logTracker.push({ message: 'JSON response received from Gemini.' });
+        const response = await model.generateContent({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { 
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: "object",
+              properties: {
+                match_score: { type: "integer" },
+                matched_skills: { type: "array", items: { type: "string" } },
+                missing_skills: { type: "array", items: { type: "string" } }
+              },
+              required: ["match_score", "matched_skills", "missing_skills"]
+            }
+          }
+        });
 
-      const parsed = safeJsonParse(responseText);
-      return res.json({
-        data: {
-          jd_source_file: jd.source_file || 'job_description.pdf',
-          match_score: parsed.match_score || 0,
-          matched_skills: parsed.matched_skills || [],
-          missing_skills: parsed.missing_skills || []
-        },
-        logs: createAgentLogs('SKILL_MATCHING', logTracker)
-      });
+        const responseText = response.response.text();
+        logTracker.push({ message: 'JSON response received from Gemini.' });
+
+        const parsed = safeJsonParse(responseText);
+        return res.json({
+          data: {
+            jd_source_file: jd.source_file || 'job_description.pdf',
+            match_score: parsed.match_score || 0,
+            matched_skills: parsed.matched_skills || [],
+            missing_skills: parsed.missing_skills || []
+          },
+          logs: createAgentLogs('SKILL_MATCHING', logTracker)
+        });
+      } catch (apiErr) {
+        logTracker.push({ level: 'WARNING', message: `Gemini API call failed (${apiErr.message}). Gracefully falling back to matching heuristics...` });
+        
+        const matched_skills = [];
+        const missing_skills = [];
+
+        jd.skills.forEach(jdSkill => {
+          const matchedSkillObj = profile.skills.find(
+            ps => ps.skill_name.toLowerCase() === jdSkill.skill_name.toLowerCase() ||
+                  ps.category_code === jdSkill.category_code
+          );
+
+          if (matchedSkillObj) {
+            if (matchedSkillObj.skill_name.toLowerCase() === jdSkill.skill_name.toLowerCase()) {
+              matched_skills.push(`${matchedSkillObj.skill_name} (Direct Match)`);
+            } else {
+              matched_skills.push(`${matchedSkillObj.skill_name} (Conceptual Match for ${jdSkill.skill_name} under category ${jdSkill.category_code})`);
+            }
+          } else {
+            missing_skills.push(`${jdSkill.skill_name} (${jdSkill.category_code} category missing)`);
+          }
+        });
+
+        const ratio = jd.skills.length ? matched_skills.length / jd.skills.length : 1;
+        const match_score = Math.min(100, Math.round(ratio * 100) + (profile.hackathons.length ? 10 : 0));
+
+        await new Promise(r => setTimeout(r, 1000));
+        return res.json({
+          data: {
+            jd_source_file: jd.source_file || 'job_description.pdf',
+            match_score,
+            matched_skills,
+            missing_skills
+          },
+          logs: createAgentLogs('SKILL_MATCHING', logTracker)
+        });
+      }
     } else {
       logTracker.push({ level: 'WARNING', message: 'No API key configured. Executing fallback comparison algorithms...' });
       
