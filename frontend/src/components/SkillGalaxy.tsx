@@ -24,6 +24,8 @@ interface Node {
   level: number;
   pulseSpeed: number;
   pulsePhase: number;
+  orbitAngle: number; // Added to track orbital position
+  orbitRadius: number; // Added to track orbital distance
 }
 
 interface MiniParticle {
@@ -47,6 +49,7 @@ export const SkillGalaxy: React.FC<SkillGalaxyProps> = ({ profile, report, onNod
   const miniParticlesRef = useRef<MiniParticle[]>([]);
   const animationFrameIdRef = useRef<number | null>(null);
   const mouseRef = useRef({ x: -1000, y: -1000 });
+  const coreScaleRef = useRef(1); // For core pulsing reaction when absorbing particles
 
   // Map of category codes to neon colors
   const categoryColors: Record<string, string> = {
@@ -67,7 +70,7 @@ export const SkillGalaxy: React.FC<SkillGalaxyProps> = ({ profile, report, onNod
 
   const getColor = (code: string) => categoryColors[code] || '#38bdf8';
 
-  // Initialize nodes based on state
+  // Initialize and update nodes dynamically
   useEffect(() => {
     if (!profile) {
       nodesRef.current = [];
@@ -84,7 +87,7 @@ export const SkillGalaxy: React.FC<SkillGalaxyProps> = ({ profile, report, onNod
     const newNodes: Node[] = [];
 
     if (viewMode === 'atom') {
-      // Core Node
+      // Core Node representing Candidate Identity
       newNodes.push({
         id: 'core',
         label: profile.name,
@@ -101,10 +104,12 @@ export const SkillGalaxy: React.FC<SkillGalaxyProps> = ({ profile, report, onNod
         type: 'candidate',
         level: 10,
         pulseSpeed: 0.03,
-        pulsePhase: 0
+        pulsePhase: 0,
+        orbitAngle: 0,
+        orbitRadius: 0
       });
 
-      // Orbital category nodes
+      // Orbital category nodes (RADIX subsystems)
       const categories = ['COD', 'DSA', 'OOD', 'APTI', 'COMM', 'AI', 'CLOUD', 'SQL', 'SWE', 'SYSD', 'NETW', 'OS'];
       categories.forEach((cat, idx) => {
         const catSkills = profile.skills.filter(s => s.category_code === cat);
@@ -115,28 +120,37 @@ export const SkillGalaxy: React.FC<SkillGalaxyProps> = ({ profile, report, onNod
         });
         level = Math.min(10, level);
 
-        const orbitRadius = 140 + (idx % 2) * 50;
-        const angle = (idx / 12) * Math.PI * 2;
-        const x = centerX + Math.cos(angle) * orbitRadius;
-        const y = centerY + Math.sin(angle) * orbitRadius;
+        // MEANINGFUL PHYSICS RULES:
+        // 1. Distance matches level: Stronger skills are pulled closer to the core nucleus (tight integration).
+        //    Level 10 => 80px orbit. Level 0 => 220px orbit.
+        const orbitRadius = 220 - level * 14;
+        
+        // Retain previous angle/position if node existed before to prevent jumpiness on update
+        const oldNode = nodesRef.current.find(o => o.id === `cand-${cat}`);
+        const orbitAngle = oldNode ? oldNode.orbitAngle : (idx / 12) * Math.PI * 2;
+
+        const x = centerX + Math.cos(orbitAngle) * orbitRadius;
+        const y = centerY + Math.sin(orbitAngle) * orbitRadius;
 
         newNodes.push({
           id: `cand-${cat}`,
           label: `${cat} (${level})`,
-          x: x + (Math.random() - 0.5) * 40,
-          y: y + (Math.random() - 0.5) * 40,
-          vx: 0,
-          vy: 0,
+          x: oldNode ? oldNode.x : x + (Math.random() - 0.5) * 40,
+          y: oldNode ? oldNode.y : y + (Math.random() - 0.5) * 40,
+          vx: oldNode ? oldNode.vx : 0,
+          vy: oldNode ? oldNode.vy : 0,
           targetX: x,
           targetY: y,
-          radius: level > 0 ? 10 + level * 1.8 : 8,
-          baseRadius: level > 0 ? 10 + level * 1.8 : 8,
+          radius: level > 0 ? 11 + level * 1.6 : 8,
+          baseRadius: level > 0 ? 11 + level * 1.6 : 8,
           color: getColor(cat),
           glowColor: getColor(cat) + '40',
           type: 'candidate',
           level: level,
           pulseSpeed: 0.015 + Math.random() * 0.015,
-          pulsePhase: Math.random() * Math.PI * 2
+          pulsePhase: Math.random() * Math.PI * 2,
+          orbitAngle,
+          orbitRadius
         });
       });
 
@@ -151,58 +165,53 @@ export const SkillGalaxy: React.FC<SkillGalaxyProps> = ({ profile, report, onNod
         const cat = gapItem.category_code;
         const color = getColor(cat);
 
+        // Candidate node (Left side)
+        const oldCand = nodesRef.current.find(o => o.id === `cand-${cat}`);
         newNodes.push({
           id: `cand-${cat}`,
           label: `${cat} (${gapItem.candidate_level})`,
-          x: leftX - 100 + Math.random() * 50,
-          y: y,
-          vx: 0,
-          vy: 0,
+          x: oldCand ? oldCand.x : leftX - 100 + Math.random() * 50,
+          y: oldCand ? oldCand.y : y,
+          vx: oldCand ? oldCand.vx : 0,
+          vy: oldCand ? oldCand.vy : 0,
           targetX: leftX,
           targetY: y,
-          radius: 8 + gapItem.candidate_level * 1.8,
-          baseRadius: 8 + gapItem.candidate_level * 1.8,
+          radius: 8 + gapItem.candidate_level * 1.6,
+          baseRadius: 8 + gapItem.candidate_level * 1.6,
           color: color,
           glowColor: color + '40',
           type: 'candidate',
           level: gapItem.candidate_level,
           pulseSpeed: 0.02,
-          pulsePhase: idx * 0.5
+          pulsePhase: idx * 0.5,
+          orbitAngle: 0,
+          orbitRadius: 0
         });
 
+        // Company benchmark node (Right side)
+        const oldBench = nodesRef.current.find(o => o.id === `bench-${cat}`);
         newNodes.push({
           id: `bench-${cat}`,
           label: `Req: ${gapItem.required_level}`,
-          x: rightX + 100 - Math.random() * 50,
-          y: y,
-          vx: 0,
-          vy: 0,
+          x: oldBench ? oldBench.x : rightX + 100 - Math.random() * 50,
+          y: oldBench ? oldBench.y : y,
+          vx: oldBench ? oldBench.vx : 0,
+          vy: oldBench ? oldBench.vy : 0,
           targetX: rightX,
           targetY: y,
-          radius: 8 + gapItem.required_level * 1.8,
-          baseRadius: 8 + gapItem.required_level * 1.8,
+          radius: 8 + gapItem.required_level * 1.6,
+          baseRadius: 8 + gapItem.required_level * 1.6,
           color: gapItem.gap ? '#ef4444' : '#10b981',
           glowColor: gapItem.gap ? 'rgba(239, 68, 68, 0.4)' : 'rgba(16, 185, 129, 0.4)',
           type: 'benchmark',
           level: gapItem.required_level,
           pulseSpeed: 0.02,
-          pulsePhase: idx * 0.5 + Math.PI
+          pulsePhase: idx * 0.5 + Math.PI,
+          orbitAngle: 0,
+          orbitRadius: 0
         });
       });
-    } else {
-      setViewMode('atom');
     }
-
-    // Retain coordinates of matching existing nodes
-    newNodes.forEach(newNode => {
-      const oldNode = nodesRef.current.find(o => o.id === newNode.id);
-      if (oldNode) {
-        newNode.x = oldNode.x;
-        newNode.y = oldNode.y;
-        newNode.vx = oldNode.vx;
-        newNode.vy = oldNode.vy;
-      }
-    });
 
     nodesRef.current = newNodes;
   }, [profile, report, viewMode]);
@@ -217,7 +226,7 @@ export const SkillGalaxy: React.FC<SkillGalaxyProps> = ({ profile, report, onNod
     const resizeCanvas = () => {
       if (containerRef.current && canvas) {
         canvas.width = containerRef.current.clientWidth;
-        canvas.height = 400;
+        canvas.height = 420;
       }
     };
     resizeCanvas();
@@ -226,7 +235,7 @@ export const SkillGalaxy: React.FC<SkillGalaxyProps> = ({ profile, report, onNod
     const animationLoop = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Radial grid overlay
+      // Radial background grid
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.015)';
       ctx.lineWidth = 1;
       const step = 40;
@@ -247,35 +256,44 @@ export const SkillGalaxy: React.FC<SkillGalaxyProps> = ({ profile, report, onNod
       const centerX = canvas.width / 2;
       const centerY = canvas.height / 2;
 
-      // Update positions
+      // Update core pulse bounce back to scale 1
+      coreScaleRef.current += (1 - coreScaleRef.current) * 0.08;
+
+      // Update node physics positions
       nodes.forEach(node => {
         node.pulsePhase += node.pulseSpeed;
-        node.radius = node.baseRadius + Math.sin(node.pulsePhase) * 1.5;
+        
+        if (node.id === 'core') {
+          node.radius = node.baseRadius * coreScaleRef.current + Math.sin(node.pulsePhase) * 1.5;
+        } else {
+          node.radius = node.baseRadius + Math.sin(node.pulsePhase) * 1.2;
+        }
 
         if (viewMode === 'atom') {
           if (node.id !== 'core') {
-            const dx = node.x - centerX;
-            const dy = node.y - centerY;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            
-            const speed = 0.5 / (dist * 0.01);
-            const orbitX = -dy / dist * speed;
-            const orbitY = dx / dist * speed;
-            
-            const targetDist = node.targetX - centerX;
-            const springForce = (targetDist - dist) * 0.03;
-            const springX = dx / dist * springForce;
-            const springY = dy / dist * springForce;
+            // MEANINGFUL PHYSICS RULE 2:
+            // Orbit angular speed matches competence: Stronger skills spin faster (high energy).
+            // Level 10 => 0.012 speed. Level 0 => 0.003 speed.
+            const speedMultiplier = 0.003 + node.level * 0.001;
+            node.orbitAngle += speedMultiplier;
 
-            node.vx += orbitX + springX;
-            node.vy += orbitY + springY;
-            node.vx *= 0.94;
-            node.vy *= 0.94;
-            
+            // Target orbit coordinate based on current orbit angle
+            const targetX = centerX + Math.cos(node.orbitAngle) * node.orbitRadius;
+            const targetY = centerY + Math.sin(node.orbitAngle) * node.orbitRadius;
+
+            // Damped spring-mass system physics to pull node to orbit path coordinates
+            const dx = targetX - node.x;
+            const dy = targetY - node.y;
+            node.vx += dx * 0.05;
+            node.vy += dy * 0.05;
+            node.vx *= 0.88;
+            node.vy *= 0.88;
+
             node.x += node.vx;
             node.y += node.vy;
           }
         } else {
+          // Alignment linear spring movement
           const dx = node.targetX - node.x;
           const dy = node.targetY - node.y;
           node.vx = dx * 0.1;
@@ -284,28 +302,47 @@ export const SkillGalaxy: React.FC<SkillGalaxyProps> = ({ profile, report, onNod
           node.y += node.vy;
         }
 
-        // Magnet repeller from mouse
+        // Magnet repeller from mouse cursor
         const mx = mouseRef.current.x;
         const my = mouseRef.current.y;
         const mdx = node.x - mx;
         const mdy = node.y - my;
         const mdist = Math.sqrt(mdx * mdx + mdy * mdy);
-        if (mdist < 120 && mdist > 5) {
-          const push = (120 - mdist) * 0.06;
+        if (mdist < 100 && mdist > 5) {
+          const push = (100 - mdist) * 0.04;
           node.x += mdx / mdist * push;
           node.y += mdy / mdist * push;
         }
       });
 
-      // Link Lines
+      // ----------------------------------------------------
+      // DRAW CONNECTIONS AND ORBIT TRAILS
+      // ----------------------------------------------------
       if (viewMode === 'atom') {
         nodes.forEach(node => {
           if (node.id !== 'core') {
+            // Draw orbit trace path circles (dotted for weak, solid for strong)
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, node.orbitRadius, 0, Math.PI * 2);
+            ctx.strokeStyle = node.level > 0 ? `${node.color}15` : 'rgba(255, 255, 255, 0.02)';
+            ctx.lineWidth = node.level > 0 ? 1 : 0.5;
+            if (node.level === 0) {
+              ctx.setLineDash([2, 8]);
+            } else if (node.level < 5) {
+              ctx.setLineDash([4, 4]);
+            } else {
+              ctx.setLineDash([]);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw core linkage beam
+            // Line thickness and opacity matches competency levels!
             ctx.beginPath();
             ctx.moveTo(centerX, centerY);
             ctx.lineTo(node.x, node.y);
-            ctx.strokeStyle = node.level > 0 ? `${node.color}25` : 'rgba(255, 255, 255, 0.03)';
-            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = node.level > 0 ? `${node.color}35` : 'rgba(255, 255, 255, 0.03)';
+            ctx.lineWidth = node.level > 0 ? 1 + node.level * 0.35 : 0.5;
             ctx.stroke();
           }
         });
@@ -334,16 +371,42 @@ export const SkillGalaxy: React.FC<SkillGalaxyProps> = ({ profile, report, onNod
         });
       }
 
-      // Update & Draw Splash Mini-Particles
+      // ----------------------------------------------------
+      // DRAW MINI SPLASH PARTICLES WITH CORE GRAVITY
+      // ----------------------------------------------------
       const mps = miniParticlesRef.current;
       for (let i = mps.length - 1; i >= 0; i--) {
         const p = mps[i];
+
+        // MEANINGFUL PHYSICS RULE 3:
+        // Mini particles splash outwards initially, but get pulled in by core gravity
+        // forming "skills feeding candidates hub" cosmic trace!
+        const gdx = centerX - p.x;
+        const gdy = centerY - p.y;
+        const gdist = Math.sqrt(gdx * gdx + gdy * gdy);
+
+        if (gdist > 25 && viewMode === 'atom') {
+          // Gravitational pull force vector
+          const pullIntensity = 0.45;
+          p.vx += gdx / gdist * pullIntensity;
+          p.vy += gdy / gdist * pullIntensity;
+        }
+
         p.x += p.vx;
         p.y += p.vy;
-        p.vx *= 0.95;
-        p.vy *= 0.95;
-        p.life -= 0.035;
+        p.vx *= 0.94; // Air resistance damping
+        p.vy *= 0.94;
+        
+        p.life -= 0.015;
         p.opacity = Math.max(0, p.life);
+
+        // Core absorption collision detection
+        if (gdist < 28 && viewMode === 'atom') {
+          // Absorbed! Trigger core scale bounce reaction pulse
+          coreScaleRef.current = Math.min(1.4, coreScaleRef.current + 0.025);
+          mps.splice(i, 1);
+          continue;
+        }
 
         if (p.life <= 0) {
           mps.splice(i, 1);
@@ -361,13 +424,15 @@ export const SkillGalaxy: React.FC<SkillGalaxyProps> = ({ profile, report, onNod
         ctx.restore();
       }
 
-      // Draw Main Nodes
+      // ----------------------------------------------------
+      // DRAW MAIN NODES
+      // ----------------------------------------------------
       nodes.forEach(node => {
         ctx.save();
         ctx.beginPath();
         ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2);
         
-        ctx.shadowBlur = 20;
+        ctx.shadowBlur = node.id === 'core' ? 30 : 20;
         ctx.shadowColor = node.color;
         ctx.fillStyle = node.color;
         ctx.fill();
@@ -377,6 +442,7 @@ export const SkillGalaxy: React.FC<SkillGalaxyProps> = ({ profile, report, onNod
         ctx.stroke();
         ctx.restore();
 
+        // Renders text descriptions
         if (node.level > 0 || node.id === 'core' || viewMode === 'alignment') {
           ctx.fillStyle = '#ffffff';
           ctx.font = node.id === 'core' ? 'bold 11px sans-serif' : '10px sans-serif';
@@ -398,7 +464,7 @@ export const SkillGalaxy: React.FC<SkillGalaxyProps> = ({ profile, report, onNod
     };
   }, [viewMode, hoveredNode, report]);
 
-  // Click Handler - Triggers Boost Splash & State update
+  // Click Handler - Triggers dynamic gravity-attracted splashes
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -412,10 +478,10 @@ export const SkillGalaxy: React.FC<SkillGalaxyProps> = ({ profile, report, onNod
       const dy = node.y - y;
       const dist = Math.sqrt(dx * dx + dy * dy);
       if (dist < node.radius + 12) {
-        // Trigger mini particles splash explosion
-        for (let i = 0; i < 18; i++) {
+        // Explode particles that fly outward first, then zoom into the core center
+        for (let i = 0; i < 20; i++) {
           const angle = Math.random() * Math.PI * 2;
-          const speed = 2 + Math.random() * 5;
+          const speed = 3 + Math.random() * 6; // Initial outward burst speed
           miniParticlesRef.current.push({
             x: node.x,
             y: node.y,
@@ -473,7 +539,7 @@ export const SkillGalaxy: React.FC<SkillGalaxyProps> = ({ profile, report, onNod
         padding: '24px', 
         display: 'flex', 
         flexDirection: 'column', 
-        minHeight: '520px',
+        minHeight: '540px',
         background: 'linear-gradient(135deg, rgba(11, 15, 25, 0.95) 0%, rgba(3, 7, 18, 0.95) 100%)',
         borderColor: 'rgba(59, 130, 246, 0.15)',
         boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6), inset 0 0 40px rgba(6, 182, 212, 0.05)'
@@ -491,12 +557,12 @@ export const SkillGalaxy: React.FC<SkillGalaxyProps> = ({ profile, report, onNod
         }}
       >
         <div>
-          <span className="logo-badge" style={{ margin: 0, fontSize: '10px' }}>INTERACTIVE SIMULATOR</span>
+          <span className="logo-badge" style={{ margin: 0, fontSize: '10px' }}>GRAVITATIONAL ORBIT SIMULATOR</span>
           <h2 style={{ fontSize: '18px', fontWeight: 800, marginTop: '4px', background: 'linear-gradient(to right, #fff, #9ca3af)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             {viewMode === 'atom' ? 'Candidate Skill Atom Orbit' : 'Benchmark Skill Alignment Vector'}
           </h2>
           <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-            💡 Hint: Click on any skill node to boost its competency score dynamically!
+            ⚙ Physics Rules: Stronger skills orbit **closer** and **faster** to candidate core. Click nodes to boost!
           </span>
         </div>
 
@@ -526,7 +592,7 @@ export const SkillGalaxy: React.FC<SkillGalaxyProps> = ({ profile, report, onNod
         onClick={handleCanvasClick}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        style={{ width: '100%', height: '400px', cursor: hoveredNode ? 'pointer' : 'default', zIndex: 5 }}
+        style={{ width: '100%', height: '420px', cursor: hoveredNode ? 'pointer' : 'default', zIndex: 5 }}
       />
 
       {hoveredNode && hoveredNode.id !== 'core' && (
