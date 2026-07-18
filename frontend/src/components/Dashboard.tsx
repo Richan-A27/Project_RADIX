@@ -118,6 +118,7 @@ export const Dashboard: React.FC = () => {
             onChange={async (e) => {
               if (e.target.files && e.target.files.length > 0) {
                 await parseJd(e.target.files[0]);
+                e.target.value = '';
               }
             }}
           />
@@ -188,6 +189,7 @@ export const Dashboard: React.FC = () => {
             onChange={async (e) => {
               if (e.target.files && e.target.files.length > 0) {
                 await parseResume(e.target.files[0]);
+                e.target.value = '';
               }
             }}
           />
